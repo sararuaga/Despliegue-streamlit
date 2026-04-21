@@ -74,6 +74,7 @@ Y_pred = modelo.predict(data_preparada)
 
 data['Prediccion']=Y_pred
 data.head()
+data
 
 # Recordar medida de error del modelo
 
