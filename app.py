@@ -22,8 +22,7 @@ import matplotlib.pyplot as plt
 
 #Cargamos el modelo
 import pickle
-filename = 'modelo-ensamble-clas.pkl'
-modelo, variables, labelencoder, min_max_scaler = pickle.load(open(filename, 'rb'))
+modelo, variables, labelencoder, min_max_scaler = pickle.load(open('modelo-ensamble-clas.pkl', 'rb'))
 
 #Interfaz gráfica
 #Se crea interfaz gráfica con streamlit para captura de los datos
