@@ -22,60 +22,54 @@ import matplotlib.pyplot as plt
 
 #Cargamos el modelo
 import pickle
-filename = 'modelo-reg.pkl'
-modelo, min_max_scaler, variables = pickle.load(open(filename, 'rb'))
+filename = 'modelo-ensamble-clas.pkl'
+modelo, variables, labelencoder, min_max_scaler = pickle.load(open(filename, 'rb'))
 
 #Interfaz gráfica
 #Se crea interfaz gráfica con streamlit para captura de los datos
 
 import streamlit as st
 
-st.title('Predicción de inversión en una tienda de videojuegos')
+st.title('Predicción de Riesgo de Ataque al Corazón')
 
-Edad = st.slider('Edad', min_value=14, max_value=52, value=20, step=1)
-videojuego = st.selectbox('Videojuego', ["'Mass Effect'","'Battlefield'", "'Fifa'","'KOA: Reckoning'","'Crysis'","'Sim City'","'Dead Space'","'F1'"])
-Plataforma = st.selectbox('Plataforma', ["'Play Station'", "'Xbox'","PC","Otros"])
-Sexo = st.selectbox('Sexo', ['Hombre', 'Mujer'])
-Consumidor_habitual = st.selectbox('Consumidor_habitual', ['True', 'False'])
+Age = st.slider('Edad', min_value=1, max_value=90, value=40, step=1)
+Hypertension = st.selectbox('Hipertensión', ['No', 'Yes'])
+HeartDisease = st.selectbox('Enfermedad Cardíaca', ['No', 'Yes'])
+EverMarried = st.selectbox('Alguna vez casado/a', ['No', 'Yes'])
+AvgGlucoseLevel = st.slider('Nivel Promedio de Glucosa', min_value=50.0, max_value=300.0, value=100.0, step=0.1)
+SmokingStatus = st.selectbox('Estado de Tabaquismo', ['Unknown', "'never smoked'", "'formerly smoked'", "smokes"])
 
 
 #Dataframe
-datos = [[Edad, videojuego,Plataforma,Sexo,Consumidor_habitual]]
-data = pd.DataFrame(datos, columns=['Edad', 'videojuego','Plataforma','Sexo','Consumidor_habitual']) #Dataframe con los mismos nombres de variables
-
-#Cargamos los datos futuros
-#data = pd.read_csv("videojuegos-datosFuturos (2).csv")
-#data.head()
+datos = [[Age, Hypertension, HeartDisease, EverMarried, AvgGlucoseLevel, SmokingStatus]]
+data_raw_input = pd.DataFrame(datos, columns=['age', 'hypertension', 'heart_disease', 'ever_married', 'avg_glucose_level', 'smoking_status'])
 
 #Se realiza la preparación
+data_preparada = data_raw_input.copy()
 
-data_preparada=data.copy()
+# Apply one-hot encoding for smoking_status (drop_first=False)
+data_preparada = pd.get_dummies(data_preparada, columns=['smoking_status'], drop_first=False, dtype=int)
 
+# Apply one-hot encoding for the rest (drop_first=True)
+data_preparada = pd.get_dummies(data_preparada, columns=['hypertension','heart_disease','ever_married'], drop_first=True, dtype=int)
 
+# Identify numerical features for scaling (from original notebook)
+numeric_features = ['age', 'avg_glucose_level']
 
-#En despliegue drop_first= False
-
-data_preparada = pd.get_dummies(data_preparada, columns=['videojuego', 'Plataforma','Sexo', 'Consumidor_habitual'], drop_first=False, dtype=int)
-
-data_preparada.head()
-
-#Se adicionan las columnas faltantes
+# Se adicionan las columnas faltantes y se reordena para que coincidan con las variables de entrenamiento
+# Esto es crucial para que el modelo reciba las características en el mismo orden y formato
 data_preparada=data_preparada.reindex(columns=variables,fill_value=0)
-data_preparada.head()
 
-#Se normaliza la edad para predecir con Knn, Red, SVM
-#En los despliegues no se llama fit
-data_preparada[['Edad']]= min_max_scaler.transform(data_preparada[['Edad']])
-data_preparada.head()
+#Se normaliza las variables numéricas
+data_preparada[numeric_features] = min_max_scaler.transform(data_preparada[numeric_features])
+
 
 """# **Predicciones**"""
 
-Y_pred = modelo.predict(data_preparada)
+Y_pred_numeric = modelo.predict(data_preparada)
+Y_pred_label = labelencoder.inverse_transform(Y_pred_numeric)
 
-data['Prediccion']=Y_pred
-data.head()
-data
+data_raw_input['Prediccion'] = Y_pred_label
+st.write(data_raw_input) # Display the input data with prediction
 
-# Recordar medida de error del modelo
-
-st.warning("El modelo tiene un error del 8%")
+st.success(f"La predicción es: {Y_pred_label[0]}")
